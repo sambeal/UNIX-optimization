@@ -11,10 +11,12 @@ cd /Users/samanthabeal/Documents/MSc/Bioinformatics/UNIX-optimization
 #output3 = cutadapt -e0.5
 #output4 = " and fastq_filter maxEE 2
 #cut1 = cutadapt -e0.3
-#cut2 = cutadapt -e0.4
-#output5 = " and fastq_filter maxEE 2
-#output6 = " and unoise alpha 1 (resulted in less reads that output 5)
-#output7= cutadapt -e0.4, fastq_filter maxEE 2, and minsize 4 (8K more reads than output 5)
+#output5 = cutadapt -e0.4
+#putput6 = " and fastq_filter maxEE 2
+#output7 = " and unoise alpha 1 (resulted in less reads that output 5)
+#output8 = cutadapt -e0.4, fastq_filter maxEE 2, and minsize 4 (8K more reads than output 5)
+#output9 = " and alpha 1 (60K reads LESS than output5, 7)
+#output10 = cutadapt -e0.4, fastq_filter maxEE 2, minsize 4, alpha 3
 
 ################ Input data ################
 
@@ -65,13 +67,13 @@ cd ../.. #(back to UNIX-optimization)
 #revcomp = 21 bp
 
 #remove reverse first, put into new directory, move into that directory, remove forward
-mkdir output8
-mkdir revcompremoved8
+mkdir output9
+mkdir revcompremoved9
 
 for s in $samples;
 do
 cutadapt -a "AAAAGCGTCTGCTAAATGGCA;e=0.4" \
--o revcompremoved8/${s}_L001_R1_001.fastq.gz --discard-untrimmed \
+-o revcompremoved9/${s}_L001_R1_001.fastq.gz --discard-untrimmed \
 input/${s}_L001_R1_001.fastq.gz;
 done
 
@@ -89,12 +91,12 @@ done
 for s in $samples;
 do
 cutadapt -g "TAGCTCAGCTGGTAGAGCAC;e=0.4" \
--o output8/${s}_L001_R1_001.fastq.gz --discard-untrimmed \
-revcompremoved8/${s}_L001_R1_001.fastq.gz;
+-o output9/${s}_L001_R1_001.fastq.gz --discard-untrimmed \
+revcompremoved9/${s}_L001_R1_001.fastq.gz;
 done
 
 # count number of sequences across all files in folder
-cd output8
+cd output9
 gzcat *.fastq.gz | grep -c "^@M00" 
 
 for s in $samples;
@@ -114,8 +116,8 @@ mkdir qc
 ls *.fastq.gz | parallel 'fastqc {}'
 
 # Move qc outputs
-mv /Users/samanthabeal/Documents/MSc/Bioinformatics/UNIX-optimization/output8/*.html /Users/samanthabeal/Documents/MSc/Bioinformatics/UNIX-optimization/output8/qc
-mv /Users/samanthabeal/Documents/MSc/Bioinformatics/UNIX-optimization/output8/*.zip /Users/samanthabeal/Documents/MSc/Bioinformatics/UNIX-optimization/output8/qc
+mv /Users/samanthabeal/Documents/MSc/Bioinformatics/UNIX-optimization/output9/*.html /Users/samanthabeal/Documents/MSc/Bioinformatics/UNIX-optimization/output9/qc
+mv /Users/samanthabeal/Documents/MSc/Bioinformatics/UNIX-optimization/output9/*.zip /Users/samanthabeal/Documents/MSc/Bioinformatics/UNIX-optimization/output9/qc
 
 cd qc
 multiqc .
@@ -182,7 +184,7 @@ vsearch --search_exact concatenated.fasta -db derep.fasta -otutabout derep.tsv
 #--minsize 8 = default
 #--unoise_alpha 2 = default
 #lower unoise = less strict?
-vsearch --cluster_unoise derep.fasta --minsize 4 --unoise_alpha 1 --centroids denoised.fasta
+vsearch --cluster_unoise derep.fasta --minsize 4 --unoise_alpha 3 --centroids denoised.fasta
 
 #count seqs
 vsearch --search_exact concatenated.fasta -db denoised.fasta -otutabout denoised.tsv
@@ -208,9 +210,12 @@ vsearch --search_exact concatenated.fasta -db nochim.fasta -otutabout nochim.tsv
 
 cd ../..
 
-#blast final file - after chimeras are removed
-blastn -query output8/ASV/nochim.fasta -subject SINE.fasta -outfmt 6 -out output8/ASV/nochim.txt \
+#blast final file - after chimeras are removed - unsure if i need to do this since
+#expect all sequences to be whitefish 
+
+blastn -query output9/ASV/nochim.fasta -subject SINE.fasta -outfmt 6 -out output9/ASV/nochim.txt \
 -num_threads 1 -evalue 0.001 -perc_identity 97
 
+#lose most of my reads at this step
 
 

@@ -1,4 +1,5 @@
 #ASV analysis of SINE UNIX optimization
+
 #1 <-readr::read_tsv("UNIX-optimization/output1/ASV/nochim1.tsv", show_col_types = FALSE)
 #2 <-readr::read_tsv("UNIX-optimization/output2/ASV/nochim2.tsv", show_col_types = FALSE)
 #3 <-readr::read_tsv("UNIX-optimization/output3/ASV/nochim.tsv", show_col_types = FALSE)
@@ -10,6 +11,8 @@
 #9 <-readr::read_tsv("UNIX-optimization/output9/ASV/nochim.tsv", show_col_types = FALSE)
 #10 <-readr::read_tsv("UNIX-optimization/output10/ASV/nochim.tsv", show_col_types = FALSE)
 
+#last pushed to github: after out10, 23.03.14
+
 
 #set wd to "/Users/samanthabeal/Documents/MSc/Bioinformatics"
 getwd()
@@ -17,7 +20,6 @@ getwd()
 
 #setwd("Documents/MSc/Bioinformatics")
 
-#output4----
 #load data----
 library(readr)
 output4 <-readr::read_tsv("UNIX-optimization/output4/ASV/nochim.tsv", show_col_types = FALSE)
