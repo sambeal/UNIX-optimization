@@ -17,6 +17,11 @@ cd /Users/samanthabeal/Documents/MSc/Bioinformatics/UNIX-optimization
 #output8 = cutadapt -e0.4, fastq_filter maxEE 2, and minsize 4 (8K more reads than output 5)
 #output9 = " and alpha 1 (60K reads LESS than output5, 7)
 #output10 = cutadapt -e0.4, fastq_filter maxEE 2, minsize 4, alpha 3
+#output11= dada2 parameters: -e0.1,fastq_maxee 2 --fastq_maxns 0 --fastq_truncqual 2 --fastq_minlen 50, minsize 4, alpha 2 (denosing is very different b/w the two so unsure if these were the right parameters to use or not)
+#output12 = cutadapt -e0.4, fastq_filter maxEE 2, minsize 4, alpha 5
+#output13 = cutadapt -e0.4, fastq_filter maxEE 2, minsize 4, alpha 10
+
+##last pushed to github: after out10, 23.03.14
 
 ################ Input data ################
 
@@ -52,7 +57,7 @@ done
 
 ################ Primer removal ################
 
-cd ../.. #(back to UNIX-optimization)
+cd .. #(back to UNIX-optimization)
 
 #do not anchor (^) primers - anchoring tells cutadapt that the primer is at 
 #the beginning of ther read
@@ -67,13 +72,13 @@ cd ../.. #(back to UNIX-optimization)
 #revcomp = 21 bp
 
 #remove reverse first, put into new directory, move into that directory, remove forward
-mkdir output9
-mkdir revcompremoved9
+mkdir output13
+mkdir revcompremoved13
 
 for s in $samples;
 do
 cutadapt -a "AAAAGCGTCTGCTAAATGGCA;e=0.4" \
--o revcompremoved9/${s}_L001_R1_001.fastq.gz --discard-untrimmed \
+-o revcompremoved13/${s}_L001_R1_001.fastq.gz --discard-untrimmed \
 input/${s}_L001_R1_001.fastq.gz;
 done
 
@@ -91,12 +96,12 @@ done
 for s in $samples;
 do
 cutadapt -g "TAGCTCAGCTGGTAGAGCAC;e=0.4" \
--o output9/${s}_L001_R1_001.fastq.gz --discard-untrimmed \
-revcompremoved9/${s}_L001_R1_001.fastq.gz;
+-o output13/${s}_L001_R1_001.fastq.gz --discard-untrimmed \
+revcompremoved13/${s}_L001_R1_001.fastq.gz;
 done
 
 # count number of sequences across all files in folder
-cd output9
+cd output13
 gzcat *.fastq.gz | grep -c "^@M00" 
 
 for s in $samples;
@@ -116,13 +121,13 @@ mkdir qc
 ls *.fastq.gz | parallel 'fastqc {}'
 
 # Move qc outputs
-mv /Users/samanthabeal/Documents/MSc/Bioinformatics/UNIX-optimization/output9/*.html /Users/samanthabeal/Documents/MSc/Bioinformatics/UNIX-optimization/output9/qc
-mv /Users/samanthabeal/Documents/MSc/Bioinformatics/UNIX-optimization/output9/*.zip /Users/samanthabeal/Documents/MSc/Bioinformatics/UNIX-optimization/output9/qc
+mv /Users/samanthabeal/Documents/MSc/Bioinformatics/UNIX-optimization/output13/*.html /Users/samanthabeal/Documents/MSc/Bioinformatics/UNIX-optimization/output13/qc
+mv /Users/samanthabeal/Documents/MSc/Bioinformatics/UNIX-optimization/output13/*.zip /Users/samanthabeal/Documents/MSc/Bioinformatics/UNIX-optimization/output13/qc
 
 cd qc
 multiqc .
 
-
+#should really go back and compare all the qc reports
 
 ################ Concatenate Samples ################
 
@@ -153,11 +158,16 @@ grep -c "M00" concatenated.fastq
 #--fastq_maxee 1 = default
 
 # make sure in output folder
+#--fastq_maxns 0 --fastq_truncqual 2 --fastq_minlen 50 (<-- dada2)
 
-vsearch --fastx_filter concatenated.fastq --fastq_maxee 2 --fastaout concatenated.fasta
+vsearch --fastx_filter concatenated.fastq --fastq_maxee 2  --fastaout concatenated.fasta
 
 #count seqs - this way is not informative as to the depth/fish, only total
 grep -c ">M00" concatenated.fasta
+
+#cutadapt e0.4 + fastq_maxee 2 = 2062686 
+#cutadapt e0.4 + fastq_maxee 3 = 2071423 (+10K)
+#cutadapt e0.4 + fastq_maxee 4 = 2073245 (+ another 2K)
 
 #making a .tsv of the seqs takes WAY TOO LONG
 #will just look at the derep .tsv as no other sequence manipulation happens between 
@@ -183,8 +193,9 @@ vsearch --search_exact concatenated.fasta -db derep.fasta -otutabout derep.tsv
 #paramters of concern:
 #--minsize 8 = default
 #--unoise_alpha 2 = default
-#lower unoise = less strict?
-vsearch --cluster_unoise derep.fasta --minsize 4 --unoise_alpha 3 --centroids denoised.fasta
+#lower alpha = more strict
+#higher alpha = less strict (more ASVs)
+vsearch --cluster_unoise derep.fasta --minsize 4 --unoise_alpha 10 --centroids denoised.fasta
 
 #count seqs
 vsearch --search_exact concatenated.fasta -db denoised.fasta -otutabout denoised.tsv
@@ -213,7 +224,7 @@ cd ../..
 #blast final file - after chimeras are removed - unsure if i need to do this since
 #expect all sequences to be whitefish 
 
-blastn -query output9/ASV/nochim.fasta -subject SINE.fasta -outfmt 6 -out output9/ASV/nochim.txt \
+blastn -query output13/ASV/nochim.fasta -subject SINE.fasta -outfmt 6 -out output13/ASV/nochim.txt \
 -num_threads 1 -evalue 0.001 -perc_identity 97
 
 #lose most of my reads at this step
