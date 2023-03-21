@@ -21,7 +21,7 @@ cd /Users/samanthabeal/Documents/MSc/Bioinformatics/UNIX-optimization
 #output12 = cutadapt -e0.4, fastq_filter maxEE 2, minsize 4, alpha 5
 #output13 = cutadapt -e0.4, fastq_filter maxEE 2, minsize 4, alpha 10
 
-##last pushed to github: after out10, 23.03.14
+##last pushed to github: after out13, 23.03.21
 
 ################ Input data ################
 
