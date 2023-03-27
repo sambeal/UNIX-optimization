@@ -20,6 +20,7 @@ cd /Users/samanthabeal/Documents/MSc/Bioinformatics/UNIX-optimization
 #output11= dada2 parameters: -e0.1,fastq_maxee 2 --fastq_maxns 0 --fastq_truncqual 2 --fastq_minlen 50, minsize 4, alpha 2 (denosing is very different b/w the two so unsure if these were the right parameters to use or not)
 #output12 = cutadapt -e0.4, fastq_filter maxEE 2, minsize 4, alpha 5
 #output13 = cutadapt -e0.4, fastq_filter maxEE 2, minsize 4, alpha 10
+#output 14 = " and try to make 97% OTU table from the output
 
 ##last pushed to github: after out13, 23.03.21
 
@@ -72,13 +73,13 @@ cd .. #(back to UNIX-optimization)
 #revcomp = 21 bp
 
 #remove reverse first, put into new directory, move into that directory, remove forward
-mkdir output13
-mkdir revcompremoved13
+mkdir output14
+mkdir revcompremoved14
 
 for s in $samples;
 do
 cutadapt -a "AAAAGCGTCTGCTAAATGGCA;e=0.4" \
--o revcompremoved13/${s}_L001_R1_001.fastq.gz --discard-untrimmed \
+-o revcompremoved14/${s}_L001_R1_001.fastq.gz --discard-untrimmed \
 input/${s}_L001_R1_001.fastq.gz;
 done
 
@@ -96,12 +97,12 @@ done
 for s in $samples;
 do
 cutadapt -g "TAGCTCAGCTGGTAGAGCAC;e=0.4" \
--o output13/${s}_L001_R1_001.fastq.gz --discard-untrimmed \
-revcompremoved13/${s}_L001_R1_001.fastq.gz;
+-o output14/${s}_L001_R1_001.fastq.gz --discard-untrimmed \
+revcompremoved14/${s}_L001_R1_001.fastq.gz;
 done
 
 # count number of sequences across all files in folder
-cd output13
+cd output14
 gzcat *.fastq.gz | grep -c "^@M00" 
 
 for s in $samples;
@@ -121,8 +122,8 @@ mkdir qc
 ls *.fastq.gz | parallel 'fastqc {}'
 
 # Move qc outputs
-mv /Users/samanthabeal/Documents/MSc/Bioinformatics/UNIX-optimization/output13/*.html /Users/samanthabeal/Documents/MSc/Bioinformatics/UNIX-optimization/output13/qc
-mv /Users/samanthabeal/Documents/MSc/Bioinformatics/UNIX-optimization/output13/*.zip /Users/samanthabeal/Documents/MSc/Bioinformatics/UNIX-optimization/output13/qc
+mv /Users/samanthabeal/Documents/MSc/Bioinformatics/UNIX-optimization/output14/*.html /Users/samanthabeal/Documents/MSc/Bioinformatics/UNIX-optimization/output14/qc
+mv /Users/samanthabeal/Documents/MSc/Bioinformatics/UNIX-optimization/output14/*.zip /Users/samanthabeal/Documents/MSc/Bioinformatics/UNIX-optimization/output14/qc
 
 cd qc
 multiqc .
@@ -160,7 +161,7 @@ grep -c "M00" concatenated.fastq
 # make sure in output folder
 #--fastq_maxns 0 --fastq_truncqual 2 --fastq_minlen 50 (<-- dada2)
 
-vsearch --fastx_filter concatenated.fastq --fastq_maxee 2  --fastaout concatenated.fasta
+vsearch --fastx_filter concatenated.fastq --fastq_maxee 2 --fastaout concatenated.fasta
 
 #count seqs - this way is not informative as to the depth/fish, only total
 grep -c ">M00" concatenated.fasta
@@ -168,6 +169,9 @@ grep -c ">M00" concatenated.fasta
 #cutadapt e0.4 + fastq_maxee 2 = 2062686 
 #cutadapt e0.4 + fastq_maxee 3 = 2071423 (+10K)
 #cutadapt e0.4 + fastq_maxee 4 = 2073245 (+ another 2K)
+
+#o14: --fastq_maxee 2 --fastq_maxns 0 --fastq_truncqual 2 --fastq_minlen 50 --fastaout concatenated.fasta = 1,425,397
+#o14: --fastq_maxee 2 = 2,062,686
 
 #making a .tsv of the seqs takes WAY TOO LONG
 #will just look at the derep .tsv as no other sequence manipulation happens between 
@@ -195,7 +199,7 @@ vsearch --search_exact concatenated.fasta -db derep.fasta -otutabout derep.tsv
 #--unoise_alpha 2 = default
 #lower alpha = more strict
 #higher alpha = less strict (more ASVs)
-vsearch --cluster_unoise derep.fasta --minsize 4 --unoise_alpha 10 --centroids denoised.fasta
+vsearch --cluster_unoise derep.fasta --minsize 4 --unoise_alpha 5 --centroids denoised.fasta
 
 #count seqs
 vsearch --search_exact concatenated.fasta -db denoised.fasta -otutabout denoised.tsv
@@ -203,14 +207,23 @@ vsearch --search_exact concatenated.fasta -db denoised.fasta -otutabout denoised
 ################ Chimera Filtering ################
 
 vsearch --uchime3_denovo denoised.fasta --nonchimeras nochim.fasta
-
-#count seqs = following 2 steps of code
-
+grep -c ">" nochim.fasta
+#o14: 9585
 
 ################Mapping Reads to ASVs################
 
 vsearch --search_exact concatenated.fasta -db nochim.fasta -otutabout nochim.tsv
 
+################ OTU delimination ################
+
+vsearch --cluster_size nochim.fasta --id 0.97 --centroids output14OTUs_greedy0.97.fasta --sizein --relabel otu --uc output14OTUs_greedy0.97.uc
+vsearch --search_exact concatenated.fasta -db output14OTUs_greedy0.97.fasta -otutabout output14OTUs_greedy0.97.tsv
+
+#have less reads overall after doing OTU clustering vs. assigning ASVs
+#ASV 1 and OTU 1 have the same depth across all samples-- seems weird?
+
+grep -c ">" output14OTUs_greedy0.97.fasta
+#o14: 5416 OTU clusters (need to avaluate which are consistently detected across PCR reps)
 
 ################Identifying ASVs with Blast################
 
@@ -224,7 +237,7 @@ cd ../..
 #blast final file - after chimeras are removed - unsure if i need to do this since
 #expect all sequences to be whitefish 
 
-blastn -query output13/ASV/nochim.fasta -subject SINE.fasta -outfmt 6 -out output13/ASV/nochim.txt \
+blastn -query output14/ASV/nochim.fasta -subject SINE.fasta -outfmt 6 -out output14/ASV/nochim.txt \
 -num_threads 1 -evalue 0.001 -perc_identity 97
 
 #lose most of my reads at this step

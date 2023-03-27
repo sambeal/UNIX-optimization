@@ -278,3 +278,36 @@ nochim <- as.data.frame(nochim)
 nochim2 <- nochim[,-1]
 rownames(nochim2) <- nochim[,1]
 nochim3 <- as.data.frame(colSums(nochim2))
+
+
+#output14----
+setwd("..")
+getwd()
+
+#derep
+derep <-readr::read_tsv("UNIX-optimization/output14/ASV/derep.tsv", show_col_types = FALSE)
+derep <- as.data.frame(derep)
+derep2 <- derep[,-1]
+rownames(derep2) <- derep[,1]
+derep3 <- as.data.frame(colSums(derep2))
+
+#denoise
+denoised <-readr::read_tsv("UNIX-optimization/output14/ASV/denoised.tsv", show_col_types = FALSE)
+denoised <- as.data.frame(denoised)
+denoised2 <- denoised[,-1]
+rownames(denoised2) <- denoised[,1]
+denoised3 <- as.data.frame(colSums(denoised2))
+
+#nochim
+nochim <-readr::read_tsv("UNIX-optimization/output14/ASV/nochim.tsv", show_col_types = FALSE)
+nochim <- as.data.frame(nochim)
+nochim2 <- nochim[,-1]
+rownames(nochim2) <- nochim[,1]
+nochim3 <- as.data.frame(colSums(nochim2))
+
+#otu
+otu <-readr::read_tsv("UNIX-optimization/output14/ASV/output14OTUs_greedy0.97.tsv", show_col_types = FALSE)
+otu <- as.data.frame(otu)
+otu2 <- otu[,-1]
+rownames(otu2) <- otu[,1]
+otu3 <- as.data.frame(colSums(otu2))
